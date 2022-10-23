@@ -15,10 +15,10 @@ type Page struct {
 	Id          int64 //`pg:",discard_unknown_columns"`
 	Title       string
 	Body        string
-	SpaceKey    string    `pg:"-"`
+	SpaceKey    string    `pg:"space_key"`
 	ParentId    int64     `pg:"parent_id"`
 	AuthorId    int64     `pg:"author_id"`
-	CreatedAt   time.Time `pg:"-"`
+	CreatedAt   time.Time `pg:"created_at"`
 	LastUpdated time.Time `pg:"-"`
 }
 
@@ -31,7 +31,7 @@ func main() {
 	db := pg.Connect(&pg.Options{
 		User:     os.Getenv("DB_USER"),
 		Password: os.Getenv("DB_PASS"),
-		Database: "pages",
+		Database: "wiki1",
 		Addr:     os.Getenv("DB_HOST"),
 	})
 	defer db.Close(context.Background())
@@ -47,7 +47,7 @@ func main() {
 		for i := 0; i < 100; i++ {
 			hundrPages[i] = pages[i]
 		}
-		return ctx.JSON(pages)
+		return ctx.JSON(hundrPages)
 	})
 
 	app.Get("/all-pages", func(ctx *fiber.Ctx) error {
