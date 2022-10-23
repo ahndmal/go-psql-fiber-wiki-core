@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+const ALL_PAGES = "SELECT * FROM pages"
+
 type Page struct {
 	Id          int64 //`pg:",discard_unknown_columns"`
 	Title       string
@@ -34,19 +36,26 @@ func main() {
 	})
 	defer db.Close(context.Background())
 
-	_, err := db.Query(context.Background(), &pages, "select * from pages")
+	_, err := db.Query(context.Background(), &pages, ALL_PAGES)
 	if err != nil {
 		log.Fatalln(err)
-	}
-	for i := 0; i < 100; i++ {
-		page := pages[i]
-		log.Println(page)
 	}
 
 	// REST api
 	app.Get("/pages", func(ctx *fiber.Ctx) error {
+		hundrPages := make([]Page, 100)
+		for i := 0; i < 100; i++ {
+			hundrPages[i] = pages[i]
+		}
 		return ctx.JSON(pages)
 	})
 
-	app.Listen(":4000")
+	app.Get("/all-pages", func(ctx *fiber.Ctx) error {
+		return ctx.JSON(pages)
+	})
+
+	listErr := app.Listen(":4000")
+	if err != nil {
+		log.Fatalln(listErr)
+	}
 }
