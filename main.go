@@ -2,15 +2,13 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"github.com/go-pg/pg/v11"
 	"github.com/gofiber/fiber/v2"
-	"github.com/gorilla/websocket"
+	"github.com/gofiber/websocket/v2"
 	"github.com/rsocket/rsocket-go"
 	"github.com/rsocket/rsocket-go/payload"
 	"github.com/rsocket/rsocket-go/rx/mono"
 	"log"
-	"net/http"
 	"os"
 	"time"
 )
@@ -29,7 +27,6 @@ type Page struct {
 }
 
 func main() {
-
 	app := fiber.New()
 
 	pages := make([]Page, 0)
@@ -60,17 +57,51 @@ func main() {
 		return ctx.JSON(pages)
 	})
 
-	listErr := app.Listen(":4000")
-	if err != nil {
-		log.Fatalln(listErr)
-	}
-	rSocketInit()
-	initSockets()
+	// websockets
+	app.Use("/ws", func(ctx *fiber.Ctx) error {
+		// IsWebSocketUpgrade returns true if the client requested upgrade to the WebSocket protocol.
+		if websocket.IsWebSocketUpgrade(ctx) {
+			ctx.Locals("allowed", true)
+			return ctx.Next()
+		}
+		return fiber.ErrUpgradeRequired
+	})
+
+	app.Get("/ws/:id", websocket.New(func(c *websocket.Conn) {
+		// c.Locals is added to the *websocket.Conn
+		log.Println(c.Locals("allowed"))  // true
+		log.Println(c.Params("id"))       // 123
+		log.Println(c.Query("v"))         // 1.0
+		log.Println(c.Cookies("session")) // ""
+
+		// websocket.Conn bindings https://pkg.go.dev/github.com/fasthttp/websocket?tab=doc#pkg-index
+		var (
+			mt  int
+			msg []byte
+			err error
+		)
+		for {
+			if mt, msg, err = c.ReadMessage(); err != nil {
+				log.Println("read:", err)
+				break
+			}
+			log.Printf("recv: %s", msg)
+
+			if err = c.WriteMessage(mt, msg); err != nil {
+				log.Println("write:", err)
+				break
+			}
+		}
+	}))
+
+	//rSocketInit()
+
+	log.Fatal(app.Listen(":4000"))
 }
 
 func rSocketInit() {
-	log.Println(">> initiating RSocket")
 	PORT := ":7878"
+	log.Printf(">> initiating RSocket on port %s", PORT)
 	err := rsocket.Receive().
 		Acceptor(func(ctx context.Context, setup payload.SetupPayload, sendingSocket rsocket.CloseableRSocket) (rsocket.RSocket, error) {
 			return rsocket.NewAbstractSocket(
@@ -82,36 +113,4 @@ func rSocketInit() {
 		Transport(rsocket.TCPServer().SetAddr(PORT).Build()).
 		Serve(context.Background())
 	log.Fatalln(err)
-}
-
-func initSockets() {
-	log.Println(">> initiating Sockets")
-	var upgrader = websocket.Upgrader{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
-	}
-	http.HandleFunc("/echo", func(writer http.ResponseWriter, req *http.Request) {
-		conn, _ := upgrader.Upgrade(writer, req, nil) // error ignored for sake of simplicity
-
-		for {
-			// Read message from browser
-			msgType, msg, err := conn.ReadMessage()
-			if err != nil {
-				return
-			}
-
-			fmt.Printf("%s sent: %s\n", conn.RemoteAddr(), string(msg))
-
-			// Write message back to browser
-			if err = conn.WriteMessage(msgType, msg); err != nil {
-				return
-			}
-		}
-	})
-
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "websockets.html")
-	})
-
-	http.ListenAndServe(":8090", nil)
 }
