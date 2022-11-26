@@ -4,6 +4,9 @@ import (
 	"context"
 	"github.com/go-pg/pg/v11"
 	"github.com/gofiber/fiber/v2"
+	"github.com/rsocket/rsocket-go"
+	"github.com/rsocket/rsocket-go/payload"
+	"github.com/rsocket/rsocket-go/rx/mono"
 	"log"
 	"os"
 	"time"
@@ -58,4 +61,19 @@ func main() {
 	if err != nil {
 		log.Fatalln(listErr)
 	}
+}
+
+func rSocketInit() {
+	PORT := ":7878"
+	err := rsocket.Receive().
+		Acceptor(func(ctx context.Context, setup payload.SetupPayload, sendingSocket rsocket.CloseableRSocket) (rsocket.RSocket, error) {
+			return rsocket.NewAbstractSocket(
+				rsocket.RequestResponse(func(msg payload.Payload) mono.Mono {
+					return mono.Just(msg)
+				}),
+			), nil
+		}).
+		Transport(rsocket.TCPServer().SetAddr(PORT).Build()).
+		Serve(context.Background())
+	log.Fatalln(err)
 }
