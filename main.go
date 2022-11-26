@@ -2,12 +2,15 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"github.com/go-pg/pg/v11"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gorilla/websocket"
 	"github.com/rsocket/rsocket-go"
 	"github.com/rsocket/rsocket-go/payload"
 	"github.com/rsocket/rsocket-go/rx/mono"
 	"log"
+	"net/http"
 	"os"
 	"time"
 )
@@ -61,9 +64,12 @@ func main() {
 	if err != nil {
 		log.Fatalln(listErr)
 	}
+	rSocketInit()
+	initSockets()
 }
 
 func rSocketInit() {
+	log.Println(">> initiating RSocket")
 	PORT := ":7878"
 	err := rsocket.Receive().
 		Acceptor(func(ctx context.Context, setup payload.SetupPayload, sendingSocket rsocket.CloseableRSocket) (rsocket.RSocket, error) {
@@ -76,4 +82,36 @@ func rSocketInit() {
 		Transport(rsocket.TCPServer().SetAddr(PORT).Build()).
 		Serve(context.Background())
 	log.Fatalln(err)
+}
+
+func initSockets() {
+	log.Println(">> initiating Sockets")
+	var upgrader = websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+	}
+	http.HandleFunc("/echo", func(writer http.ResponseWriter, req *http.Request) {
+		conn, _ := upgrader.Upgrade(writer, req, nil) // error ignored for sake of simplicity
+
+		for {
+			// Read message from browser
+			msgType, msg, err := conn.ReadMessage()
+			if err != nil {
+				return
+			}
+
+			fmt.Printf("%s sent: %s\n", conn.RemoteAddr(), string(msg))
+
+			// Write message back to browser
+			if err = conn.WriteMessage(msgType, msg); err != nil {
+				return
+			}
+		}
+	})
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "websockets.html")
+	})
+
+	http.ListenAndServe(":8090", nil)
 }
