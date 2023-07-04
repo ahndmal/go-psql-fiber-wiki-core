@@ -1,6 +1,6 @@
 module go-wiki-core
 
-go 1.19
+go 1.20
 
 require (
 	github.com/go-pg/pg/v11 v11.0.0-alpha.6

@@ -3,14 +3,17 @@ package main
 import (
 	"context"
 	"github.com/go-pg/pg/v11"
+	//"github.com/go-pg/pg/v11/orm"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 	"github.com/rsocket/rsocket-go"
 	"github.com/rsocket/rsocket-go/payload"
 	"github.com/rsocket/rsocket-go/rx/mono"
 	"log"
-	"os"
+	"fmt"
 	"time"
+	"strconv"
+	"os"
 )
 
 const ALL_PAGES = "SELECT * FROM pages"
@@ -32,11 +35,12 @@ func main() {
 	pages := make([]Page, 0)
 
 	db := pg.Connect(&pg.Options{
-		User:     os.Getenv("DB_USER"),
+		User:     "dev",
 		Password: os.Getenv("DB_PASS"),
 		Database: "wiki1",
 		Addr:     os.Getenv("DB_HOST"),
 	})
+	
 	defer db.Close(context.Background())
 
 	_, err := db.Query(context.Background(), &pages, ALL_PAGES)
@@ -46,8 +50,26 @@ func main() {
 
 	// REST api
 	app.Get("/pages", func(ctx *fiber.Ctx) error {
-		hundrPages := make([]Page, 100)
-		for i := 0; i < 100; i++ {
+		
+		pLimit := ctx.Query("limit")
+
+		var limit int
+
+		if pLimit == "" {
+		  limit = 100
+		} else {
+			i, err := strconv.Atoi(pLimit)
+			if err != nil {
+				log.Println(err)
+			}
+			limit = i
+		}
+
+		//reqMethod := ctx.Method()
+
+		hundrPages := make([]Page, limit)
+		
+		for i := 0; i < limit; i++ {
 			hundrPages[i] = pages[i]
 		}
 		return ctx.JSON(hundrPages)
@@ -97,6 +119,7 @@ func main() {
 	//rSocketInit()
 
 	log.Fatal(app.Listen(":4000"))
+	log.Println( fmt.Sprintf(">> Fiber started on port %d", 4000))
 }
 
 func rSocketInit() {
@@ -114,3 +137,4 @@ func rSocketInit() {
 		Serve(context.Background())
 	log.Fatalln(err)
 }
+
