@@ -25,6 +25,8 @@ func (pr PagesRepo) GetPages(ctx context.Context) []Page {
 	if err != nil {
 		fmt.Printf("Error when selcting pages from DB. Err: %v", err)
 	}
+	defer getDB().Close()
+
 	return pages
 }
 
@@ -34,5 +36,23 @@ func (pr PagesRepo) GetPageById(ctx context.Context, id int64) Page {
 	if err != nil {
 		fmt.Printf("Error when selcting pages from DB. Err: %v", err)
 	}
+	defer getDB().Close()
+
 	return page
+}
+
+func (pr PagesRepo) GetNPages(ctx context.Context, limit int) []Page {
+	pages := make([]Page, 0)
+	err := getDB().NewSelect().Model(&pages).Limit(limit).Scan(ctx)
+	if err != nil {
+		fmt.Printf("Error when selcting pages from DB. Err: %v", err)
+	}
+	defer func(db *bun.DB) {
+		err := db.Close()
+		if err != nil {
+			fmt.Printf("Error closing the connection. Err: %v", err)
+		}
+	}(getDB())
+
+	return pages
 }
