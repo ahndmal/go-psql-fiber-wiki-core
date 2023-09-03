@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"go-wiki-core/db"
+
 	//"github.com/go-pg/pg/v11/orm"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
@@ -16,7 +18,7 @@ import (
 const allPages = "SELECT * FROM pages"
 
 func main() {
-	pageRepo := PagesRepo{}
+	pageRepo := db.PagesRepo{}
 
 	app := fiber.New()
 
@@ -36,7 +38,7 @@ func main() {
 			limit = i
 		}
 
-		pages := pageRepo.GetNPages(context.Background(), 100)
+		pages := pageRepo.GetNPages(context.Background(), limit)
 
 		return ctx.JSON(pages)
 	})

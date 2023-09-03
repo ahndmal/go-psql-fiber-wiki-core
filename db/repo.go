@@ -1,4 +1,4 @@
-package main
+package db
 
 import (
 	"context"
@@ -47,6 +47,7 @@ func (pr PagesRepo) GetNPages(ctx context.Context, limit int) []Page {
 	if err != nil {
 		fmt.Printf("Error when selcting pages from DB. Err: %v", err)
 	}
+
 	defer func(db *bun.DB) {
 		err := db.Close()
 		if err != nil {
