@@ -3,19 +3,22 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/rsocket/rsocket-go"
 	"go-wiki-core/db"
 
 	//"github.com/go-pg/pg/v11/orm"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
-	"github.com/rsocket/rsocket-go"
+	_ "github.com/rsocket/rsocket-go"
 	"github.com/rsocket/rsocket-go/payload"
 	"github.com/rsocket/rsocket-go/rx/mono"
 	"log"
 	"strconv"
 )
 
-const allPages = "SELECT * FROM pages"
+const (
+	restApiUrl = "/rest/api"
+)
 
 func main() {
 	pageRepo := db.PagesRepo{}
@@ -23,7 +26,7 @@ func main() {
 	app := fiber.New()
 
 	// REST api
-	app.Get("/pages", func(ctx *fiber.Ctx) error {
+	app.Get(fmt.Sprintf("%s/pages", restApiUrl), func(ctx *fiber.Ctx) error {
 		pLimit := ctx.Query("limit")
 
 		var limit int
@@ -43,7 +46,17 @@ func main() {
 		return ctx.JSON(pages)
 	})
 
-	app.Get("/all-pages", func(ctx *fiber.Ctx) error {
+	app.Get(fmt.Sprintf("%s/pages/:id", restApiUrl), func(ctx *fiber.Ctx) error {
+		id := ctx.Params("id")
+		idInt, err := strconv.Atoi(id)
+		if err != nil {
+			log.Printf(">> Error when parsing id from string to INT: %v", err)
+		}
+		page := pageRepo.GetPageById(context.Background(), int64(idInt))
+		return ctx.JSON(page)
+	})
+
+	app.Get(fmt.Sprintf("%s/all-pages", restApiUrl), func(ctx *fiber.Ctx) error {
 		pages := pageRepo.GetPages(context.Background())
 		return ctx.JSON(pages)
 	})

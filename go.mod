@@ -1,12 +1,15 @@
 module go-wiki-core
 
-go 1.20
+go 1.21
 
 require (
 	github.com/go-pg/pg/v11 v11.0.0-alpha.6
 	github.com/gofiber/fiber/v2 v2.40.1
 	github.com/gofiber/websocket/v2 v2.1.2
 	github.com/rsocket/rsocket-go v0.8.12
+	github.com/uptrace/bun v1.1.14
+	github.com/uptrace/bun/dialect/pgdialect v1.1.14
+	github.com/uptrace/bun/driver/pgdriver v1.1.14
 )
 
 require (
@@ -28,9 +31,6 @@ require (
 	github.com/savsgio/gotils v0.0.0-20220530130905-52f3993e8d6d // indirect
 	github.com/stretchr/testify v1.8.1 // indirect
 	github.com/tmthrgd/go-hex v0.0.0-20190904060850-447a3041c3bc // indirect
-	github.com/uptrace/bun v1.1.14 // indirect
-	github.com/uptrace/bun/dialect/pgdialect v1.1.14 // indirect
-	github.com/uptrace/bun/driver/pgdriver v1.1.14 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.42.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect

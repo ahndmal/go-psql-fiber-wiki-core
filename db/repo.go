@@ -13,7 +13,7 @@ import (
 type PagesRepo struct{}
 
 func getDB() *bun.DB {
-	dsn := os.Getenv("DB_DSN")
+	dsn := os.Getenv("DB_DSN") //postgres://postgres:@localhost:5432/test?sslmode=disable
 	sqldb := sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(dsn)))
 	db := bun.NewDB(sqldb, pgdialect.New())
 	return db
@@ -25,7 +25,14 @@ func (pr PagesRepo) GetPages(ctx context.Context) []Page {
 	if err != nil {
 		fmt.Printf("Error when selcting pages from DB. Err: %v", err)
 	}
-	defer getDB().Close()
+	//defer func(db *bun.DB) {
+	//	err := db.Close()
+	//	if err != nil {
+	//		log.Fatalf("> Error when closing DB connection: %v", err)
+	//	}
+	//}(getDB())
+
+	getDB().Close()
 
 	return pages
 }
